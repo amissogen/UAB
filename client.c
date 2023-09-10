@@ -2,9 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <arpa/inet.h>
-
-
+#include <netinet/in.h> //pel INADDR_ANY
+#include <sys/socket.h> //per la creació de sockets
 
 int main()
 {
@@ -27,10 +26,11 @@ int main()
     while (1)
     {
         printf("Menú principal:\n");
-        printf("1. Test conexión\n");
+        printf("1. Test conexió\n");
         printf("2. Jugar a 21 Blackjack\n");
-        printf("3. Salir\n");
-        printf("Opción: ");
+        printf("3. Consultar historial de partides\n");
+        printf("4. Sortir\n");
+        printf("Opció: ");
         scanf("%d", &option);
 
         switch (option)
@@ -39,7 +39,7 @@ int main()
             message = "test";
             send(sock, message, strlen(message), 0);
             read(sock, buffer, 1024);
-            printf("Recibido: %s\n", buffer);
+            printf("Rebut des del servidor: %s\n", buffer);
             break;
         case 2:
             message = "BLACKJACK";
@@ -52,35 +52,49 @@ int main()
                 read(sock, buffer, 1024);
                 printf("%s\n", buffer);
 
-                if (buffer[0] == 'W' || buffer[0] == 'L')
+                if (buffer[0] == 'V' || buffer[0] == 'D')
                 {
                     char *token = strtok(buffer, ":");
-                    
-               
+                    // Aquí podrías parsear y mostrar los detalles del resultado
                     playing = 0;
                     continue;
                 }
 
-                printf("¿Quieres otra carta? (H/S): ");
+                printf("Vols una altre carta? (S/N): ");
                 scanf("%s", action);
 
                 // Traduce las opciones del menú a las palabras que el servidor entiende
-                if (action[0] == 'H' || action[0] == 'h')
+                if (action[0] == 'S' || action[0] == 's')
                 {
-                    send(sock, "H", 3, 0);
+                    send(sock, "S", 1, 0);
                 }
-                else if (action[0] == 'S' || action[0] == 's')
+                else if (action[0] == 'N' || action[0] == 'n')
                 {
-                    send(sock, "S", 5, 0);
+                    send(sock, "N", 1, 0);
                 }
             }
-
             break;
+
         case 3:
+
+            message = "GET_HISTORY";
+            send(sock, message, strlen(message), 0);
+      
+                memset(buffer, 0, sizeof(buffer));
+                read(sock, buffer, 1024);
+                if (strcmp(buffer, "END_OF_HISTORY\n") == 0)
+                {
+                    break; // Sal del bucle cuando recibas el mensaje especial
+                }
+                printf("%s", buffer); // Imprime cada entrada del historial
+       
+            break;
+
+        case 4:
             close(sock);
             return 0;
         default:
-            printf("Opción inválida\n");
+            printf("Opció invàlida\n");
             break;
         }
     }
