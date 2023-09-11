@@ -1,16 +1,23 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <netinet/in.h> //pel INADDR_ANY
-#include <sys/socket.h> //per la creació de sockets
+#include "common.h"
 
-int main()
+int main(int argc, char *argv[])
 {
+    char *server_address = DEFAULT_SERVER_IP;
+    int server_port = DEFAULT_SERVER_PORT;
+    if (argc > 3 || argc == 2)
+    {
+        fprintf(stderr, "Uso: %s <DIRECCION_SERVIDOR> <PUERTO_SERVIDOR>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+    else if (argc == 3)
+    {
+        server_address = argv[1];
+        server_port = atoi(argv[2]);
+    }
     // struct sockaddr_in address;
     int sock = 0;
     struct sockaddr_in serv_addr;
-    char buffer[1024] = {0};
+    char buffer[BUFFER_SIZE] = {0};
     char *message;
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -22,8 +29,8 @@ int main()
     memset(&serv_addr, '0', sizeof(serv_addr));
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(8080);
-    inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
+    serv_addr.sin_port = htons(server_port);
+    inet_pton(AF_INET, server_address, &serv_addr.sin_addr);
 
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
@@ -48,7 +55,7 @@ int main()
         case 1:
             message = "test";
             send(sock, message, strlen(message), 0);
-            read(sock, buffer, 1024);
+            read(sock, buffer, BUFFER_SIZE);
             printf("Rebut des del servidor: %s\n", buffer);
             break;
         case 2:
@@ -59,7 +66,7 @@ int main()
             while (playing)
             {
                 memset(buffer, 0, sizeof(buffer)); // Limpia el buffer
-                read(sock, buffer, 1024);
+                read(sock, buffer, BUFFER_SIZE);
                 printf("%s\n", buffer);
 
                 if (buffer[0] == 'V' || buffer[0] == 'D')
@@ -90,7 +97,7 @@ int main()
             send(sock, message, strlen(message), 0);
 
             memset(buffer, 0, sizeof(buffer));
-            read(sock, buffer, 1024);
+            read(sock, buffer, BUFFER_SIZE);
             if (strcmp(buffer, "END_OF_HISTORY\n") == 0)
             {
                 break; // Sal del bucle cuando recibas el mensaje especial
