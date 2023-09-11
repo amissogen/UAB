@@ -7,24 +7,34 @@
 
 int main()
 {
-    struct sockaddr_in address;
+    // struct sockaddr_in address;
     int sock = 0;
     struct sockaddr_in serv_addr;
     char buffer[1024] = {0};
     char *message;
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0)
+    {
+        perror("No se pudo crear el socket");
+        exit(EXIT_FAILURE);
+    }
     memset(&serv_addr, '0', sizeof(serv_addr));
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(8080);
     inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
 
-    connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        perror("Conexión fallida");
+        exit(EXIT_FAILURE);
+    }
 
     int option;
     while (1)
     {
+        memset(buffer, 0, sizeof(buffer));
         printf("Menú principal:\n");
         printf("1. Test conexió\n");
         printf("2. Jugar a 21 Blackjack\n");
@@ -54,10 +64,9 @@ int main()
 
                 if (buffer[0] == 'V' || buffer[0] == 'D')
                 {
-                    char *token = strtok(buffer, ":");
-                    // Aquí podrías parsear y mostrar los detalles del resultado
+                
                     playing = 0;
-                    continue;
+                    break;
                 }
 
                 printf("Vols una altre carta? (S/N): ");
@@ -79,15 +88,15 @@ int main()
 
             message = "GET_HISTORY";
             send(sock, message, strlen(message), 0);
-      
-                memset(buffer, 0, sizeof(buffer));
-                read(sock, buffer, 1024);
-                if (strcmp(buffer, "END_OF_HISTORY\n") == 0)
-                {
-                    break; // Sal del bucle cuando recibas el mensaje especial
-                }
-                printf("%s", buffer); // Imprime cada entrada del historial
-       
+
+            memset(buffer, 0, sizeof(buffer));
+            read(sock, buffer, 1024);
+            if (strcmp(buffer, "END_OF_HISTORY\n") == 0)
+            {
+                break; // Sal del bucle cuando recibas el mensaje especial
+            }
+            printf("%s", buffer); // Imprime cada entrada del historial
+
             break;
 
         case 4:
